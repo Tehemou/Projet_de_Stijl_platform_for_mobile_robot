@@ -5,6 +5,8 @@
  * Created on 23 décembre 2017, 19:45
  */
 
+// test commit tehe
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,6 +22,7 @@
 
 // Déclaration des taches
 RT_TASK th_server;
+RT_TASK th_server2;
 RT_TASK th_sendToMon;
 RT_TASK th_receiveFromMon;
 RT_TASK th_openComRobot;
