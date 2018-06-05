@@ -22,7 +22,6 @@
 
 // Déclaration des taches
 RT_TASK th_server;
-RT_TASK th_server2;
 RT_TASK th_sendToMon;
 RT_TASK th_receiveFromMon;
 RT_TASK th_openComRobot;
