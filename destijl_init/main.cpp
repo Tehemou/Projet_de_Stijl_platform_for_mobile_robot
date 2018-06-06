@@ -5,8 +5,6 @@
  * Created on 23 décembre 2017, 19:45
  */
 
-// test commit tehe
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -72,12 +70,17 @@ int MSG_QUEUE_SIZE = 10;
 
 // Déclaration des ressources partagées -> definition dans main.cpp et function.h
 //-> créer mutex pour affecter les valeurs
-int etatCommMoniteur = 1;
 int robotStarted = 0;
 char move = DMB_STOP_MOVE;
 int failedCom = 0;
 bool getimage = true;
+
+/* ressources partagées sans mutex (TODO ?) */
+int etatCommMoniteur = 1;
 int arenereponse=-1;
+Camera c;
+bool drawArena = false;
+Arene * arene;
 
 /**
  * \fn void initStruct(void)
@@ -169,6 +172,10 @@ void initStruct(void) {
         printf("Error semaphore create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
+    if (err = rt_sem_create(&sem_ask_arena, NULL, 0, S_FIFO)) {
+        printf("Error semaphore create: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
     if (err = rt_sem_create(&sem_closeCam, NULL, 0, S_FIFO)) {
         printf("Error semaphore create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
@@ -248,10 +255,10 @@ void startTasks() {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
-    /*if (err = rt_task_start(&th_checkBat, &f_checkBat, NULL)) {
+    if (err = rt_task_start(&th_checkBat, &f_checkBat, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
-    }*/
+    }
     if (err = rt_task_start(&th_openCam, &f_openCam, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);

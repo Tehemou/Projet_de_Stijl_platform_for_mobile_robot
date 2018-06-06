@@ -65,6 +65,9 @@ extern int failedCom;
 extern bool getimage;
 extern int arenereponse;
 extern int MSG_QUEUE_SIZE;
+extern Camera c;
+extern bool drawArena;
+extern Arene * arene;
 
 extern int PRIORITY_TSERVER;
 extern int PRIORITY_TOPENCOMROBOT;

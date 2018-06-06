@@ -297,6 +297,7 @@ void f_checkBat(void * arg) {
             close_communication_robot();
         }
     }
+    
 }
 
 void f_openCam(void * arg) {
@@ -304,7 +305,10 @@ void f_openCam(void * arg) {
     rt_task_inquire(NULL, &info);
     printf("Init %s\n", info.name);
 
-    Camera c;
+    //Camera c;
+    Image imageoriginal;
+    Image imagesortie;
+    Jpg imagecompress;
     MessageToMon msg;
     int err;
 
@@ -326,12 +330,22 @@ void f_openCam(void * arg) {
         rt_task_set_periodic(NULL, TM_NOW, 100000000);
         while (1) {
             rt_task_wait_period(NULL);
+            
+            
             //TODO variable partagé getimage
             if (getimage) {
-                Image imageoriginal;                
+                           
                 get_image(&c, &imageoriginal);
-                Jpg imagecompress;
-                compress_image(&imageoriginal, &imagecompress);
+                
+                // si drawArena = true, on dessine l'arene sur l'image capturé
+                if (drawArena) {
+                    draw_arena(&imageoriginal, &imagesortie, arene);
+                    compress_image(&imagesortie, &imagecompress);
+                }
+                else {
+                    compress_image(&imageoriginal, &imagecompress);
+                }
+                
                 send_message_to_monitor(HEADER_STM_IMAGE, &imagecompress);
             }
         }
@@ -343,61 +357,70 @@ void f_arene(void * arg) {
     rt_task_inquire(NULL, &info);
     printf("Init %s\n", info.name);
     
-    Camera c;
+    //Camera c;
     MessageToMon msg;
     Image imageoriginal, imagesortie;
     Arene * arene;
     Jpg imagecompress;
     int err;
     
-#ifdef _WITH_TRACE_
-    printf("ask_arene\n");
-#endif
-    rt_sem_p(&sem_ask_arena,TM_INFINITE);
+    while(1) {
+    #ifdef _WITH_TRACE_
+        printf("ask_arene\n");
+    #endif
+        rt_sem_p(&sem_ask_arena,TM_INFINITE);
 
-    // changer la variable partagée
-    rt_mutex_acquire(&mutex_getimage, TM_INFINITE);
-    getimage = false;
-    rt_mutex_release(&mutex_getimage);
+        // changer la variable partagée
+        rt_mutex_acquire(&mutex_getimage, TM_INFINITE);
+        getimage = false;
+        rt_mutex_release(&mutex_getimage);
 
-#ifdef _WITH_TRACE_
-    printf("get image false\n");
-#endif
-    get_image(&c, &imageoriginal);
+    #ifdef _WITH_TRACE_
+        printf("get image false\n");
+    #endif
+        get_image(&c, &imageoriginal);
 
-    if (detect_arena(&imageoriginal, arene) == -1) {
-        set_msgToMon_header(&msg, HEADER_STM_NO_ACK);
-        write_in_queue(&q_messageToMon, msg);
-    } else {
-           draw_arena(&imageoriginal, &imagesortie, arene);
-        // a voir TODO
-           Jpg imagecompress;
-           compress_image(&imagesortie, &imagecompress);
-           send_message_to_monitor(HEADER_STM_IMAGE, &imagecompress);
-    
-             rt_sem_p(&sem_arena, TM_INFINITE);
-        if (arenereponse == 0) {
-            //infirm
-
-#ifdef _WITH_TRACE_
-    printf("infirm arene\n");
-#endif
-        } else if (arenereponse == 1) {
-            //confirm
- #ifdef _WITH_TRACE_
-    printf("confirm arene\n");
-#endif
+        if (detect_arena(&imageoriginal, arene) == -1) {
+            set_msgToMon_header(&msg, HEADER_STM_NO_ACK);
+            write_in_queue(&q_messageToMon, msg);
         } else {
-            // lost connection
-#ifdef _WITH_TRACE_
-    printf("lost connectionarenee\n");
-#endif
+               draw_arena(&imageoriginal, &imagesortie, arene);
+            // a voir TODO
+               Jpg imagecompress;
+               compress_image(&imagesortie, &imagecompress);
+               send_message_to_monitor(HEADER_STM_IMAGE, &imagecompress);
 
+                 rt_sem_p(&sem_arena, TM_INFINITE);
+            if (arenereponse == 0) {
+                //infirm
+                drawArena = false;
+
+    #ifdef _WITH_TRACE_
+        printf("infirm arene\n");
+    #endif
+            } else if (arenereponse == 1) {
+                //confirm
+                drawArena = true;
+                
+     #ifdef _WITH_TRACE_
+        printf("confirm arene\n");
+    #endif
+            } else {
+                // lost connection
+    #ifdef _WITH_TRACE_
+        printf("lost connectionarenee\n");
+    #endif
+
+            }
         }
+        rt_mutex_acquire(&mutex_getimage, TM_INFINITE);
+        getimage = true;
+        rt_mutex_release(&mutex_getimage);
+
+        #ifdef _WITH_TRACE_
+            printf("fin th_arene\n");
+        #endif
     }
-    rt_mutex_acquire(&mutex_getimage, TM_INFINITE);
-    getimage = true;
-    rt_mutex_release(&mutex_getimage);
 }
 
 void check_connection(int err) {
